@@ -6,860 +6,549 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt }) {
   const DATE_STORAGE_KEY = 'ocpl2026-editable-dates';
 
   useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
+    if (!containerRef.current) return;
     const editableElements = containerRef.current.querySelectorAll(
       '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
     );
-
     let savedDates = {};
-    try {
-      savedDates = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || '{}');
-    } catch {
-      savedDates = {};
-    }
-
+    try { savedDates = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || '{}'); } catch { savedDates = {}; }
     editableElements.forEach((element, index) => {
       const id = `date-${index}`;
-      const originalText = element.textContent || '';
-
       element.setAttribute('data-date-id', id);
       element.setAttribute('contenteditable', 'true');
       element.setAttribute('spellcheck', 'false');
-      element.setAttribute('title', 'Click and edit date');
-
-      defaultDatesRef.current[id] = originalText;
-
-      if (typeof savedDates[id] === 'string') {
-        element.textContent = savedDates[id];
-      }
+      element.setAttribute('title', 'Click to edit');
+      defaultDatesRef.current[id] = element.textContent || '';
+      if (typeof savedDates[id] === 'string') element.textContent = savedDates[id];
     });
-
-    const persistDates = () => {
-      const currentDates = {};
-
-      const allEditableElements = containerRef.current.querySelectorAll(
-        '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
-      );
-      allEditableElements.forEach((element) => {
-        const id = element.getAttribute('data-date-id');
-        if (id) {
-          currentDates[id] = (element.textContent || '').trim();
-        }
-      });
-
-      localStorage.setItem(DATE_STORAGE_KEY, JSON.stringify(currentDates));
+    const persist = () => {
+      const cur = {};
+      containerRef.current.querySelectorAll('.milestone-date, .phase-duration, .stat-box-date, .footer-date')
+        .forEach(el => { const id = el.getAttribute('data-date-id'); if (id) cur[id] = (el.textContent || '').trim(); });
+      localStorage.setItem(DATE_STORAGE_KEY, JSON.stringify(cur));
     };
-
-    editableElements.forEach((element) => {
-      element.addEventListener('input', persistDates);
-    });
-
-    return () => {
-      editableElements.forEach((element) => {
-        element.removeEventListener('input', persistDates);
-      });
-    };
+    editableElements.forEach(el => el.addEventListener('input', persist));
+    return () => editableElements.forEach(el => el.removeEventListener('input', persist));
   }, []);
 
   const resetEditedDates = () => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const editableElements = containerRef.current.querySelectorAll(
-      '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
-    );
-
-    editableElements.forEach((element) => {
-      const id = element.getAttribute('data-date-id');
-      if (id && typeof defaultDatesRef.current[id] === 'string') {
-        element.textContent = defaultDatesRef.current[id];
-      }
-    });
-
+    if (!containerRef.current) return;
+    containerRef.current.querySelectorAll('.milestone-date, .phase-duration, .stat-box-date, .footer-date')
+      .forEach(el => { const id = el.getAttribute('data-date-id'); if (id && defaultDatesRef.current[id] != null) el.textContent = defaultDatesRef.current[id]; });
     localStorage.removeItem(DATE_STORAGE_KEY);
   };
 
-  const getDateEntries = () => {
-    if (!containerRef.current) {
-      return [];
-    }
-
-    const editableElements = containerRef.current.querySelectorAll(
-      '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
-    );
-
-    return Array.from(editableElements).map((element) => {
-      const id = element.getAttribute('data-date-id') || '';
-      const currentValue = (element.textContent || '').trim();
-      const originalValue = defaultDatesRef.current[id] || '';
-
-      return {
-        id,
-        originalValue,
-        currentValue,
-        edited: currentValue !== originalValue
-      };
-    });
-  };
-
-  const downloadTextFile = (content, fileName, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-
-    anchor.href = url;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
-  };
-
   const exportDatesAsCSV = () => {
-    const entries = getDateEntries();
-    const timestamp = new Date().toISOString();
-    const escapeCSV = (value) => `"${String(value).replace(/"/g, '""')}"`;
-    const header = ['id', 'originalValue', 'currentValue', 'edited'];
-    const rows = entries.map((entry) => [
-      entry.id,
-      entry.originalValue,
-      entry.currentValue,
-      entry.edited
-    ]);
-    const csv = [header, ...rows].map((row) => row.map(escapeCSV).join(',')).join('\n');
-
-    downloadTextFile(
-      csv,
-      `ocpl-dates-${timestamp.slice(0, 10)}.csv`,
-      'text/csv;charset=utf-8'
-    );
+    if (!containerRef.current) return;
+    const entries = Array.from(containerRef.current.querySelectorAll('.milestone-date, .phase-duration, .stat-box-date, .footer-date'))
+      .map(el => { const id = el.getAttribute('data-date-id') || ''; const cur = (el.textContent || '').trim(); const orig = defaultDatesRef.current[id] || ''; return { id, orig, cur, edited: cur !== orig }; });
+    const esc = v => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = [['id','original','current','edited'], ...entries.map(e => [e.id, e.orig, e.cur, e.edited])].map(r => r.map(esc).join(',')).join('\n');
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: `ocpl-dates-${new Date().toISOString().slice(0,10)}.csv` });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
+
+  const phases = [
+    {
+      num: '01', color: '#10B981', bg: 'rgba(16,185,129,0.07)',
+      title: 'Foundation Phase',
+      duration: 'February 12 – 25, 2026  ·  14 Days',
+      milestones: [
+        { date: 'Feb 12 – 18', name: 'Turf Scouting & Evaluation' },
+        { date: 'Feb 18', name: 'Turf Booking (Advance)' },
+        { date: 'Feb 23 – 25', name: 'Owners & Captains Finalized' },
+        { date: 'Feb 25', name: 'All Teams Confirmed', key: true },
+      ],
+      outcomes: ['Venue completely confirmed and booked', 'All team owners finalized (48+ Players)', 'All captains appointed', 'Budget allocated and locked'],
+    },
+    {
+      num: '02', color: '#F59E0B', bg: 'rgba(245,158,11,0.07)',
+      title: 'Planning & Auction Phase',
+      duration: 'February 26 – March 24, 2026  ·  27 Days',
+      milestones: [
+        { date: 'Mar 2 – 4', name: 'Logos & Banners Finalized' },
+        { date: 'Mar 3 – 6', name: 'Auction Rules Finalized' },
+        { date: 'Mar 8', name: 'Final Player List Released' },
+        { date: 'Mar 10', name: 'Auction Day — Major Milestone', key: true },
+        { date: 'Mar 12+', name: 'Email & Marketing Campaign' },
+        { date: 'Mar 13 – 18', name: 'Media Vendors Finalized' },
+        { date: 'Mar 17 – 20', name: 'Audience Form Rollout' },
+        { date: 'Mar 24', name: 'Phase Completion' },
+      ],
+      outcomes: ['Auction successfully executed', 'All teams and players finalized', 'Media teams and photographers hired', 'Marketing campaign in full swing'],
+    },
+    {
+      num: '03', color: '#EF4444', bg: 'rgba(239,68,68,0.07)',
+      title: 'Production & Confirmation',
+      duration: 'March 25 – April 10, 2026  ·  17 Days',
+      alert: 'Apr 7 – 10 has 10+ simultaneous tasks. Maximum coordination required.',
+      milestones: [
+        { date: 'Mar 24', name: 'Umpires & Scorers Confirmed' },
+        { date: 'Mar 28 – 31', name: 'Trophies Order (Advance)' },
+        { date: 'Apr 4 – 6', name: 'Medical Supplies (Advance)' },
+        { date: 'Apr 6 – 8', name: 'Food Vendors Selected' },
+        { date: 'Apr 7 – 10', name: 'Peak Coordination Window', key: true },
+        { date: 'Apr 9', name: 'Jerseys Collection' },
+        { date: 'Apr 10', name: 'Food Tasting & Approval' },
+        { date: 'Apr 10', name: 'Production Phase Complete', key: true },
+      ],
+      outcomes: ['All equipment sourced and vendors confirmed', 'All officials (umpires, scorers) appointed', 'All supplies — trophies, medical, jerseys — secured', 'Food arrangements locked and tested', 'All advance payments completed'],
+    },
+    {
+      num: '04', color: '#8B5CF6', bg: 'rgba(139,92,246,0.07)',
+      title: 'Final Setup & Launch',
+      duration: 'April 11 – 16, 2026  ·  6 Days',
+      milestones: [
+        { date: 'Apr 11', name: 'Balls (36 units) Ordered' },
+        { date: 'Apr 13', name: 'Remote Players Final Setup' },
+        { date: 'Apr 14', name: 'Women Travel Arrangements' },
+        { date: 'Apr 16', name: 'Pooja Material Ordered' },
+        { date: 'Apr 15 – 16', name: 'Final Venue Setup & Decoration' },
+        { date: 'Apr 16', name: 'Event Ready', key: true },
+      ],
+      outcomes: ['Venue completely set up and decorated', 'All materials delivered and in place', 'All arrangements 100% confirmed', 'Backup plans activated and tested', 'Ready for event execution'],
+    },
+  ];
 
   return (
-    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh' }}>
+    <div ref={containerRef} style={{ background: '#07070d', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      {/* ── Navbar ── */}
-      <nav className="ocpl-navbar">
-        <div className="ocpl-navbar-inner">
-          <div className="ocpl-navbar-left">
-            <img src="/onclusive-logo.png" alt="Onclusive" className="ocpl-navbar-logo-img" />
-            <span className="ocpl-navbar-brand">Onclusive</span>
+        /* ─── Navbar ─── */
+        .navbar {
+          position: sticky; top: 0; z-index: 200;
+          background: rgba(7,7,13,0.85);
+          backdrop-filter: blur(16px);
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          padding: 0 40px;
+        }
+        .navbar-inner {
+          max-width: 1160px; margin: 0 auto;
+          height: 62px; display: flex; align-items: center;
+        }
+        .navbar-logo { display: flex; align-items: center; gap: 10px; }
+        .navbar-logo img { height: 32px; width: 32px; border-radius: 6px; object-fit: contain; }
+        .navbar-logo span {
+          font-family: 'Poppins', sans-serif; font-size: 16px;
+          font-weight: 600; color: #f0f0f8;
+        }
+
+        /* ─── Hero ─── */
+        .hero {
+          max-width: 1160px; margin: 0 auto;
+          padding: 72px 40px 64px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .hero-label {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 11px; font-weight: 600; letter-spacing: 2px;
+          text-transform: uppercase; color: #4a4a6a;
+          margin-bottom: 20px;
+        }
+        .hero-label::before {
+          content: ''; width: 20px; height: 1px; background: #4a4a6a;
+        }
+        .hero-title {
+          font-family: 'Poppins', sans-serif;
+          font-size: 64px; font-weight: 800;
+          color: #ffffff; line-height: 1.05;
+          letter-spacing: -2px; margin-bottom: 6px;
+        }
+        .hero-title span { color: #ffffff; }
+        .hero-subtitle {
+          font-family: 'Poppins', sans-serif;
+          font-size: 64px; font-weight: 800;
+          color: #1e1e30; line-height: 1.05;
+          letter-spacing: -2px; margin-bottom: 36px;
+          -webkit-text-stroke: 1px #2a2a46;
+        }
+        .hero-meta {
+          display: flex; align-items: center; gap: 24px;
+          flex-wrap: wrap; margin-bottom: 32px;
+        }
+        .hero-meta-item { display: flex; align-items: center; gap: 8px; }
+        .hero-meta-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .hero-meta-text { font-size: 13px; color: #5a5a7a; font-weight: 500; }
+        .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 9px 18px; border-radius: 8px;
+          font-size: 13px; font-weight: 500; cursor: pointer;
+          border: 1px solid; transition: all 0.18s;
+          font-family: 'Inter', sans-serif; text-decoration: none;
+        }
+        .btn-outline { color: #6a6a8a; border-color: #1e1e30; background: transparent; }
+        .btn-outline:hover { color: #c0c0e0; border-color: #2e2e48; background: #10101e; }
+        .btn-accent {
+          color: #fff; border-color: transparent;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        }
+        .btn-accent:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.3); }
+
+        /* ─── Stats ─── */
+        .stats-section {
+          max-width: 1160px; margin: 0 auto;
+          padding: 52px 40px;
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 1px; background: rgba(255,255,255,0.04);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .stat-card {
+          background: #07070d; padding: 32px 28px;
+          display: flex; flex-direction: column; gap: 6px;
+        }
+        .stat-number {
+          font-family: 'Poppins', sans-serif; font-size: 48px;
+          font-weight: 800; color: #ffffff; line-height: 1;
+          letter-spacing: -2px;
+        }
+        .stat-label {
+          font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+          text-transform: uppercase; color: #3a3a58;
+        }
+        .stat-box-date {
+          font-size: 12px; color: #3a3a56; margin-top: 4px;
+          cursor: text; border-radius: 4px; padding: 2px 4px;
+          transition: background 0.15s, color 0.15s; display: inline-block;
+        }
+        .stat-box-date[contenteditable='true']:hover { background: #12121e; color: #6060a0; }
+        .stat-box-date[contenteditable='true']:focus { outline: 1px solid #6366f1; outline-offset: 2px; color: #a5b4fc; background: rgba(99,102,241,0.08); }
+
+        /* ─── Timeline ─── */
+        .timeline { max-width: 1160px; margin: 0 auto; padding: 64px 40px; }
+        .timeline-section { margin-bottom: 64px; position: relative; }
+        .phase-connector {
+          width: 1px; height: 40px;
+          background: linear-gradient(to bottom, rgba(255,255,255,0.08), transparent);
+          margin: 0 0 0 30px;
+        }
+
+        /* Phase Card */
+        .phase-card {
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 16px; overflow: hidden;
+        }
+        .phase-card-header {
+          padding: 28px 32px;
+          display: flex; align-items: flex-start; gap: 20px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .phase-num {
+          font-family: 'Poppins', sans-serif;
+          font-size: 13px; font-weight: 800; letter-spacing: 2px;
+          width: 40px; height: 40px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .phase-info { flex: 1; }
+        .phase-tag {
+          font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+          text-transform: uppercase; margin-bottom: 6px;
+        }
+        .phase-name {
+          font-family: 'Poppins', sans-serif;
+          font-size: 22px; font-weight: 700;
+          color: #f0f0f8; margin-bottom: 6px; line-height: 1.2;
+        }
+        .phase-duration {
+          font-size: 13px; color: #4a4a6a; cursor: text;
+          border-radius: 4px; padding: 2px 4px; display: inline-block;
+          transition: background 0.15s, color 0.15s;
+        }
+        .phase-duration[contenteditable='true']:hover { background: #12121e; color: #6060a0; }
+        .phase-duration[contenteditable='true']:focus { outline: 1px solid #6366f1; outline-offset: 2px; color: #a5b4fc; background: rgba(99,102,241,0.08); }
+
+        /* Alert */
+        .phase-alert {
+          margin: 20px 32px 0;
+          padding: 12px 16px; border-radius: 8px;
+          display: flex; align-items: flex-start; gap: 10px;
+          background: rgba(239,68,68,0.06);
+          border: 1px solid rgba(239,68,68,0.2);
+        }
+        .phase-alert-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #ef4444; flex-shrink: 0; margin-top: 4px;
+        }
+        .phase-alert-text { font-size: 12px; color: #f87171; font-weight: 500; line-height: 1.6; }
+
+        /* Milestone Grid */
+        .milestone-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 1px; background: rgba(255,255,255,0.04);
+          margin-top: 20px;
+          border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .milestone-card {
+          background: #0b0b14; padding: 20px 24px;
+          position: relative; transition: background 0.2s;
+          border-left: 2px solid transparent;
+        }
+        .milestone-card:hover { background: #0f0f1c; }
+        .milestone-card.is-key { border-left-color: var(--phase-color); background: #0d0d18; }
+        .milestone-date {
+          font-size: 10px; font-weight: 700; letter-spacing: 1px;
+          text-transform: uppercase; margin-bottom: 8px;
+          cursor: text; border-radius: 3px; padding: 1px 2px;
+          display: inline-block;
+          transition: background 0.15s, color 0.15s;
+        }
+        .milestone-date[contenteditable='true']:hover { background: #1a1a2a; }
+        .milestone-date[contenteditable='true']:focus { outline: 1px solid #6366f1; outline-offset: 2px; background: rgba(99,102,241,0.1); color: #a5b4fc; }
+        .milestone-name {
+          font-size: 13px; font-weight: 500; color: #8888a8; line-height: 1.45;
+        }
+        .milestone-name.bold { color: #d0d0f0; font-weight: 600; }
+
+        /* Outcomes */
+        .outcomes-grid {
+          display: grid; grid-template-columns: repeat(2, 1fr);
+          gap: 10px; padding: 24px 32px;
+          border-top: 1px solid rgba(255,255,255,0.05);
+          background: #09091a;
+        }
+        .outcome-row {
+          display: flex; align-items: flex-start; gap: 10px;
+        }
+        .outcome-check {
+          width: 18px; height: 18px; border-radius: 5px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; margin-top: 1px; font-size: 10px; font-weight: 700;
+        }
+        .outcome-text { font-size: 12px; color: #4a4a6a; line-height: 1.5; }
+
+        /* ─── Success Section ─── */
+        .success-section {
+          max-width: 1160px; margin: 0 auto 80px;
+          padding: 0 40px;
+        }
+        .section-eyebrow {
+          font-size: 11px; font-weight: 700; letter-spacing: 2px;
+          text-transform: uppercase; color: #3a3a58; margin-bottom: 24px;
+          display: flex; align-items: center; gap: 12px;
+        }
+        .section-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+        .factors-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 1px; background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 14px; overflow: hidden;
+        }
+        .factor-col { background: #0a0a16; padding: 28px 24px; }
+        .factor-title {
+          font-family: 'Poppins', sans-serif;
+          font-size: 13px; font-weight: 700; color: #d0d0f0;
+          margin-bottom: 18px; padding-bottom: 14px;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .factor-item {
+          font-size: 12px; color: #4a4a6a;
+          padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+          line-height: 1.5;
+        }
+        .factor-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .factor-item strong { color: #7070a0; font-weight: 600; }
+
+        /* ─── Footer ─── */
+        .footer-bar {
+          border-top: 1px solid rgba(255,255,255,0.05);
+          padding: 32px 40px;
+          max-width: 1160px; margin: 0 auto;
+          display: flex; align-items: center; justify-content: space-between;
+          flex-wrap: wrap; gap: 12px;
+        }
+        .footer-left { font-size: 13px; font-weight: 600; color: #2a2a48; }
+        .footer-right { font-size: 12px; color: #2a2a48; }
+        .footer-date {
+          display: inline; cursor: text; border-radius: 3px; padding: 1px 3px;
+          transition: background 0.15s, color 0.15s;
+        }
+        .footer-date[contenteditable='true']:hover { background: #12121e; color: #4a4a6a; }
+        .footer-date[contenteditable='true']:focus { outline: 1px solid #6366f1; outline-offset: 2px; color: #a5b4fc; background: rgba(99,102,241,0.08); }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 900px) {
+          .hero-title, .hero-subtitle { font-size: 40px; letter-spacing: -1px; }
+          .stats-section { grid-template-columns: 1fr 1fr; padding: 32px 24px; }
+          .factors-grid { grid-template-columns: 1fr 1fr; }
+          .timeline { padding: 40px 24px; }
+          .hero { padding: 48px 24px 40px; }
+        }
+        @media (max-width: 600px) {
+          .hero-title, .hero-subtitle { font-size: 30px; }
+          .milestone-grid { grid-template-columns: 1fr; }
+          .outcomes-grid { grid-template-columns: 1fr; }
+          .stats-section { grid-template-columns: 1fr; }
+          .factors-grid { grid-template-columns: 1fr; }
+          .phase-card-header { flex-direction: column; gap: 14px; }
+        }
+      `}</style>
+
+      {/* ─── Navbar ─── */}
+      <nav className="navbar">
+        <div className="navbar-inner">
+          <div className="navbar-logo">
+            <img src="/onclusive-logo.png" alt="Onclusive" />
+            <span>Onclusive</span>
           </div>
         </div>
       </nav>
 
-      <div ref={containerRef} style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', backgroundColor: '#0f172a', color: '#fff', fontFamily: 'Arial, sans-serif', lineHeight: 1.6, boxSizing: 'border-box' }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;600;500&family=Inter:wght@400;500;600&display=swap');
-
-        * {
-          box-sizing: border-box;
-        }
-        
-        .main-title {
-          font-family: 'Poppins', sans-serif;
-          text-align: center;
-          font-size: 56px;
-          font-weight: 800;
-          margin-bottom: 8px;
-          color: #ffffff;
-        }
-
-        /* ── Navbar ── */
-        .ocpl-navbar {
-          width: 100%;
-          background: #0a0f1e;
-          border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-          padding: 0 32px;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          box-shadow: 0 2px 16px rgba(0,0,0,0.4);
-        }
-
-        .ocpl-navbar-inner {
-          max-width: 1200px;
-          margin: 0 auto;
-          height: 64px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .ocpl-navbar-left {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .ocpl-navbar-logo-img {
-          height: 38px;
-          width: 38px;
-          object-fit: contain;
-          border-radius: 6px;
-        }
-
-        .ocpl-navbar-brand {
-          font-family: 'Poppins', sans-serif;
-          font-size: 18px;
-          font-weight: 700;
-          color: #ffffff;
-          letter-spacing: 0.3px;
-        }
-
-        .ocpl-navbar-right {
-          font-family: 'Poppins', sans-serif;
-          font-size: 13px;
-          font-weight: 600;
-          color: #94a3b8;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-        }
-        
-        .subtitle {
-          text-align: center;
-          font-size: 18px;
-          color: #cbd5e1;
-          margin-bottom: 40px;
-          font-weight: 500;
-        }
-        
-        .phase-section {
-          margin-bottom: 80px;
-          border-left: 6px solid;
-          padding: 30px;
-          border-radius: 8px;
-          background: rgba(51, 65, 85, 0.3);
-          backdrop-filter: blur(10px);
-        }
-        
-        .phase-title {
-          font-family: 'Poppins', sans-serif;
-          font-size: 28px;
-          font-weight: 700;
-          margin-bottom: 20px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        
-        .phase-duration {
-          font-size: 14px;
-          color: #a1a1aa;
-          margin-bottom: 24px;
-          font-weight: 500;
-        }
-        
-        .milestone-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        
-        .milestone-card {
-          background: rgba(30, 41, 59, 0.6);
-          padding: 16px;
-          border-radius: 8px;
-          border: 1px solid rgba(148, 163, 184, 0.2);
-          transition: all 0.3s ease;
-        }
-        
-        .milestone-card:hover {
-          background: rgba(30, 41, 59, 0.9);
-          border-color: rgba(148, 163, 184, 0.4);
-          transform: translateY(-4px);
-        }
-        
-        .milestone-icon {
-          font-size: 24px;
-          margin-bottom: 8px;
-        }
-        
-        .milestone-date {
-          font-size: 12px;
-          color: #94a3b8;
-          font-weight: 600;
-          margin-bottom: 4px;
-          text-transform: uppercase;
-          border-radius: 4px;
-          transition: background-color 0.2s ease;
-          cursor: text;
-        }
-
-        .milestone-date[contenteditable='true']:hover,
-        .phase-duration[contenteditable='true']:hover,
-        .stat-box-date[contenteditable='true']:hover,
-        .footer-date[contenteditable='true']:hover {
-          background: rgba(148, 163, 184, 0.15);
-        }
-
-        .milestone-date[contenteditable='true']:focus,
-        .phase-duration[contenteditable='true']:focus,
-        .stat-box-date[contenteditable='true']:focus,
-        .footer-date[contenteditable='true']:focus {
-          outline: 2px solid #22d3ee;
-          outline-offset: 2px;
-          background: rgba(34, 211, 238, 0.12);
-        }
-
-        .stat-box-date {
-          font-size: 11px;
-          color: #64748b;
-          margin-top: 8px;
-          border-radius: 4px;
-          transition: background-color 0.2s ease;
-          cursor: text;
-        }
-
-        .footer-date {
-          display: inline;
-          border-radius: 4px;
-          transition: background-color 0.2s ease;
-          cursor: text;
-        }
-        
-        .milestone-name {
-          font-family: 'Poppins', sans-serif;
-          font-size: 14px;
-          font-weight: 600;
-          color: #f1f5f9;
-        }
-        
-        .outcomes-section {
-          background: rgba(20, 30, 48, 0.8);
-          padding: 16px;
-          border-radius: 6px;
-          margin-top: 16px;
-        }
-        
-        .outcomes-title {
-          font-family: 'Poppins', sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
-          opacity: 0.8;
-        }
-        
-        .outcome-item {
-          font-size: 13px;
-          color: #cbd5e1;
-          margin-bottom: 8px;
-          padding-left: 12px;
-          border-left: 3px solid;
-        }
-        
-        .critical-box {
-          background: rgba(239, 68, 68, 0.1);
-          border: 2px solid #EF4444;
-          padding: 16px;
-          border-radius: 8px;
-          margin-bottom: 24px;
-          color: #fca5a5;
-          font-weight: 600;
-          font-size: 13px;
-        }
-        
-        .stats-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr;
-          gap: 20px;
-          margin: 60px 0;
-          padding: 40px;
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.2);
-        }
-        
-        .stat-box {
-          text-align: center;
-        }
-        
-        .stat-icon {
-          font-size: 40px;
-          margin-bottom: 12px;
-        }
-        
-        .stat-number {
-          font-family: 'Poppins', sans-serif;
-          font-size: 36px;
-          font-weight: 700;
-          margin-bottom: 4px;
-        }
-        
-        .stat-label {
-          font-size: 12px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          color: #94a3b8;
-        }
-        
-        .success-factors {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 24px;
-          margin-top: 40px;
-          padding: 40px;
-          background: rgba(51, 65, 85, 0.3);
-          border-radius: 12px;
-        }
-        
-        .factor-box {
-          border-left: 4px solid;
-          padding-left: 16px;
-        }
-        
-        .factor-title {
-          font-family: 'Poppins', sans-serif;
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 12px;
-        }
-        
-        .factor-item {
-          font-size: 13px;
-          color: #cbd5e1;
-          margin-bottom: 8px;
-          padding-left: 8px;
-        }
-        
-        .footer {
-          text-align: center;
-          margin-top: 60px;
-          padding-top: 30px;
-          border-top: 1px solid rgba(148, 163, 184, 0.2);
-          color: #94a3b8;
-          font-size: 12px;
-        }
-
-        .action-row {
-          display: flex;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-top: -16px;
-          margin-bottom: 28px;
-        }
-
-        .reset-btn {
-          background: rgba(14, 116, 144, 0.18);
-          color: #bae6fd;
-          border: 1px solid rgba(125, 211, 252, 0.5);
-          border-radius: 999px;
-          padding: 8px 16px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .reset-btn:hover {
-          background: rgba(14, 116, 144, 0.32);
-          border-color: rgba(125, 211, 252, 0.9);
-        }
-
-        .export-btn {
-          background: rgba(22, 101, 52, 0.22);
-          color: #bbf7d0;
-          border: 1px solid rgba(134, 239, 172, 0.55);
-          border-radius: 999px;
-          padding: 8px 16px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .export-btn:hover {
-          background: rgba(22, 101, 52, 0.36);
-          border-color: rgba(134, 239, 172, 0.95);
-        }
-
-        .gantt-btn {
-          background: rgba(37, 99, 235, 0.22);
-          color: #bfdbfe;
-          border: 1px solid rgba(147, 197, 253, 0.55);
-          border-radius: 999px;
-          padding: 8px 16px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .gantt-btn:hover {
-          background: rgba(37, 99, 235, 0.36);
-          border-color: rgba(147, 197, 253, 0.95);
-        }
-
-        @media (max-width: 1024px) {
-          .main-title {
-            font-size: 44px;
-          }
-
-          .stats-grid {
-            grid-template-columns: 1fr 1fr;
-            padding: 28px;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .main-title {
-            font-size: 34px;
-          }
-
-          .subtitle {
-            font-size: 15px;
-            margin-bottom: 28px;
-          }
-
-          .phase-section {
-            padding: 18px;
-            margin-bottom: 36px;
-          }
-
-          .phase-title {
-            font-size: 22px;
-          }
-
-          .milestone-grid,
-          .success-factors,
-          .stats-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .stats-grid,
-          .success-factors {
-            padding: 20px;
-            gap: 14px;
-            margin: 30px 0;
-          }
-
-          .stat-number {
-            font-size: 30px;
-          }
-
-          .milestone-card {
-            padding: 14px;
-          }
-
-          .action-row {
-            margin-bottom: 20px;
-          }
-        }
-      `}</style>
-
-      {/* Main Title */}
-      <h1 className="main-title">OCPL 2026 EVENT ROADMAP</h1>
-      <p className="subtitle">Complete Timeline & Milestone Tracking</p>
-      <p className="subtitle" style={{ marginTop: '-20px', fontSize: '13px', color: '#93c5fd' }}>
-        Click any phase duration or milestone date to edit directly. Changes are auto-saved.
-      </p>
-      <div className="action-row">
-        <button type="button" className="reset-btn" onClick={resetEditedDates}>
-          Reset All Edited Dates
-        </button>
-        <button type="button" className="export-btn" onClick={exportDatesAsCSV}>
-          Export Dates CSV
-        </button>
-        <button type="button" className="gantt-btn" onClick={onNavigateToGantt}>
-          View Gantt Chart
-        </button>
-      </div>
-
-      {/* Key Stats */}
-      <div className="stats-grid">
-        <div className="stat-box">
-          <div className="stat-icon">📅</div>
-          <div className="stat-number">64</div>
-          <div className="stat-label">Days</div>
-          <div className="stat-box-date">Feb 12 - Apr 16</div>
+      {/* ─── Hero ─── */}
+      <div className="hero">
+        <div className="hero-label">Event Planning Dashboard</div>
+        <h1 className="hero-title">OCPL 2026</h1>
+        <div className="hero-subtitle">EVENT ROADMAP</div>
+        <div className="hero-meta">
+          {[
+            { color: '#10B981', text: 'TURF' },
+            { color: '#F59E0B', text: 'AUCTION & PLAYERS' },
+            { color: '#EF4444', text: 'OTHER ARRANGEMENTS' },
+            { color: '#8B5CF6', text: 'FOOD' },
+          ].map(c => (
+            <div className="hero-meta-item" key={c.text}>
+              <div className="hero-meta-dot" style={{ background: c.color }} />
+              <span className="hero-meta-text">{c.text}</span>
+            </div>
+          ))}
         </div>
-        <div className="stat-box">
-          <div className="stat-icon">✅</div>
-          <div className="stat-number">48</div>
-          <div className="stat-label">Total Tasks</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>All Categories</div>
-        </div>
-        <div className="stat-box">
-          <div className="stat-icon">📊</div>
-          <div className="stat-number">4</div>
-          <div className="stat-label">Phases</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Foundation to Launch</div>
-        </div>
-        <div className="stat-box">
-          <div className="stat-icon">⚡</div>
-          <div className="stat-number">4</div>
-          <div className="stat-label">Categories</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Turf, Players, Other, Food</div>
+        <div className="hero-actions">
+          <button type="button" className="btn btn-outline" onClick={resetEditedDates}>Reset Dates</button>
+          <button type="button" className="btn btn-outline" onClick={exportDatesAsCSV}>Export CSV</button>
+          <button type="button" className="btn btn-accent" onClick={onNavigateToGantt}>View Gantt Chart →</button>
         </div>
       </div>
 
-      {/* Phase 1 */}
-      <div className="phase-section" style={{ borderColor: '#10B981' }}>
-        <div className="phase-title" style={{ color: '#10B981' }}>
-          <span>🏗️</span> PHASE 1: FOUNDATION PHASE
-        </div>
-        <div className="phase-duration">February 12-25, 2026 (14 Days)</div>
-        
-        <div className="milestone-grid">
-          <div className="milestone-card">
-            <div className="milestone-icon">🏟️</div>
-            <div className="milestone-date">Feb 12-18</div>
-            <div className="milestone-name">Turf Scouting & Evaluation</div>
+      {/* ─── Stats ─── */}
+      <div className="stats-section">
+        {[
+          { num: '64', label: 'Days', sub: 'Feb 12 – Apr 16', editable: true },
+          { num: '48', label: 'Total Tasks', sub: 'All categories', editable: false },
+          { num: '4', label: 'Phases', sub: 'Foundation → Launch', editable: false },
+          { num: '4', label: 'Categories', sub: 'Turf · Players · Other · Food', editable: false },
+        ].map((s, i) => (
+          <div className="stat-card" key={i}>
+            <div className="stat-number">{s.num}</div>
+            <div className="stat-label">{s.label}</div>
+            {s.editable
+              ? <div className="stat-box-date">{s.sub}</div>
+              : <div style={{ fontSize: '12px', color: '#3a3a56', marginTop: '4px' }}>{s.sub}</div>
+            }
           </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">📝</div>
-            <div className="milestone-date">Feb 18</div>
-            <div className="milestone-name">Turf Booking (Advance)</div>
+        ))}
+      </div>
+
+      {/* ─── Timeline Phases ─── */}
+      <div className="timeline">
+        {phases.map((phase, pi) => (
+          <div className="timeline-section" key={phase.num}>
+            {pi > 0 && <div className="phase-connector" />}
+            <div className="phase-card" style={{ '--phase-color': phase.color }}>
+
+              {/* Phase Header */}
+              <div className="phase-card-header" style={{ background: phase.bg }}>
+                <div className="phase-num" style={{ background: `${phase.color}18`, color: phase.color }}>
+                  {phase.num}
+                </div>
+                <div className="phase-info">
+                  <div className="phase-tag" style={{ color: phase.color }}>{phase.title.toUpperCase()}</div>
+                  <div className="phase-name">{phase.title}</div>
+                  <div className="phase-duration">{phase.duration}</div>
+                </div>
+              </div>
+
+              {/* Alert */}
+              {phase.alert && (
+                <div className="phase-alert">
+                  <div className="phase-alert-dot" />
+                  <div className="phase-alert-text">{phase.alert}</div>
+                </div>
+              )}
+
+              {/* Milestones */}
+              <div className="milestone-grid">
+                {phase.milestones.map((m, mi) => (
+                  <div
+                    key={mi}
+                    className={`milestone-card${m.key ? ' is-key' : ''}`}
+                    style={{ '--phase-color': phase.color }}
+                  >
+                    <div
+                      className="milestone-date"
+                      style={{ color: m.key ? phase.color : '#3a3a58' }}
+                    >
+                      {m.date}
+                    </div>
+                    <div className={`milestone-name${m.key ? ' bold' : ''}`}>{m.name}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Outcomes */}
+              <div className="outcomes-grid">
+                {phase.outcomes.map((o, oi) => (
+                  <div className="outcome-row" key={oi}>
+                    <div className="outcome-check" style={{ background: `${phase.color}18`, color: phase.color }}>✓</div>
+                    <div className="outcome-text">{o}</div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
           </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">👥</div>
-            <div className="milestone-date">Feb 23-25</div>
-            <div className="milestone-name">Owners & Captains Finalized</div>
+        ))}
+      </div>
+
+      {/* ─── Success Factors ─── */}
+      <div className="success-section">
+        <div className="section-eyebrow">Critical Success Factors</div>
+        <div className="factors-grid">
+          <div className="factor-col">
+            <div className="factor-title">Dependencies</div>
+            <div className="factor-item">Team finalization <strong>before</strong> auction rules</div>
+            <div className="factor-item">Auction completion <strong>before</strong> player list</div>
+            <div className="factor-item">Vendors selected <strong>before</strong> payments</div>
+            <div className="factor-item">Medical approvals <strong>before</strong> Apr 10</div>
+            <div className="factor-item">All collections <strong>before</strong> Apr 16</div>
           </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">🎯</div>
-            <div className="milestone-date">Feb 25</div>
-            <div className="milestone-name">All Teams Confirmed</div>
+          <div className="factor-col">
+            <div className="factor-title">Weekly Checkpoints</div>
+            <div className="factor-item"><strong>Feb 25</strong> — Teams locked in</div>
+            <div className="factor-item"><strong>Mar 10</strong> — Auction completed</div>
+            <div className="factor-item"><strong>Mar 24</strong> — Officials confirmed</div>
+            <div className="factor-item"><strong>Apr 7</strong> — Payment deadlines met</div>
+            <div className="factor-item"><strong>Apr 14</strong> — All arrangements final</div>
           </div>
-        </div>
-        
-        <div className="outcomes-section" style={{ borderLeft: '4px solid #10B981' }}>
-          <div className="outcomes-title">Expected Outcomes</div>
-          <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ Venue completely confirmed and booked</div>
-          <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ All team owners finalized (48+ Players)</div>
-          <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ All captains appointed</div>
-          <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ Budget allocated and locked</div>
+          <div className="factor-col">
+            <div className="factor-title">Critical Tasks</div>
+            <div className="factor-item"><strong>Apr 7–10</strong> peak coordination (10+ tasks)</div>
+            <div className="factor-item">Vendor tasting & approval — <strong>Apr 10</strong></div>
+            <div className="factor-item">Jersey collection — <strong>Apr 9</strong></div>
+            <div className="factor-item">Women travel arrangements — <strong>Apr 14</strong></div>
+            <div className="factor-item">Final venue setup — <strong>Apr 15–16</strong></div>
+          </div>
+          <div className="factor-col">
+            <div className="factor-title">Success Metrics</div>
+            <div className="factor-item">100% vendor payments by <strong>Apr 17</strong></div>
+            <div className="factor-item">All <strong>48 teams</strong> & players confirmed</div>
+            <div className="factor-item">All equipment delivered by <strong>Apr 15</strong></div>
+            <div className="factor-item">Food arrangements locked by <strong>Apr 10</strong></div>
+            <div className="factor-item">Event-ready status on <strong>Apr 16</strong></div>
+          </div>
         </div>
       </div>
 
-      {/* Phase 2 */}
-      <div className="phase-section" style={{ borderColor: '#F59E0B' }}>
-        <div className="phase-title" style={{ color: '#F59E0B' }}>
-          <span>🎪</span> PHASE 2: PLANNING & AUCTION PHASE
-        </div>
-        <div className="phase-duration">February 26 - March 24, 2026 (27 Days)</div>
-        
-        <div className="milestone-grid">
-          <div className="milestone-card">
-            <div className="milestone-icon">🎨</div>
-            <div className="milestone-date">Mar 2-4</div>
-            <div className="milestone-name">Logos & Banners Finalized</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">📋</div>
-            <div className="milestone-date">Mar 3-6</div>
-            <div className="milestone-name">Auction Rules Finalized</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">📊</div>
-            <div className="milestone-date">Mar 8</div>
-            <div className="milestone-name">Final Player List Released</div>
-          </div>
-          <div className="milestone-card" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05))', border: '2px solid #F59E0B' }}>
-            <div className="milestone-icon">🚀</div>
-            <div className="milestone-date">Mar 10</div>
-            <div className="milestone-name" style={{ color: '#FCD34D', fontWeight: 'bold' }}>🎯 AUCTION DAY - MAJOR MILESTONE</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">📢</div>
-            <div className="milestone-date">Mar 12+</div>
-            <div className="milestone-name">Email & Marketing Campaign</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">📸</div>
-            <div className="milestone-date">Mar 13-18</div>
-            <div className="milestone-name">Media Vendors Finalized</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">📋</div>
-            <div className="milestone-date">Mar 17-20</div>
-            <div className="milestone-name">Audience Form Rollout</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">✅</div>
-            <div className="milestone-date">Mar 24</div>
-            <div className="milestone-name">Phase Completion</div>
-          </div>
-        </div>
-        
-        <div className="outcomes-section" style={{ borderLeft: '4px solid #F59E0B' }}>
-          <div className="outcomes-title">Expected Outcomes</div>
-          <div className="outcome-item" style={{ borderColor: '#F59E0B' }}>✓ Auction successfully executed</div>
-          <div className="outcome-item" style={{ borderColor: '#F59E0B' }}>✓ All teams and players finalized</div>
-          <div className="outcome-item" style={{ borderColor: '#F59E0B' }}>✓ Media teams and photographers hired</div>
-          <div className="outcome-item" style={{ borderColor: '#F59E0B' }}>✓ Marketing campaign in full swing</div>
+      {/* ─── Footer ─── */}
+      <div className="footer-bar">
+        <div className="footer-left">OCPL 2026 Event Management Roadmap</div>
+        <div className="footer-right">
+          <span className="footer-date">February 12 – April 16, 2026</span>
+          &nbsp;·&nbsp; 64 Days &nbsp;·&nbsp; 48 Tasks &nbsp;·&nbsp; 4 Phases &nbsp;·&nbsp; FCC TEAM
         </div>
       </div>
 
-      {/* Phase 3 */}
-      <div className="phase-section" style={{ borderColor: '#EF4444' }}>
-        <div className="phase-title" style={{ color: '#EF4444' }}>
-          <span>⚙️</span> PHASE 3: PRODUCTION & CONFIRMATION
-        </div>
-        <div className="phase-duration">March 25 - April 10, 2026 (17 Days) | ⚠️ PEAK ACTIVITY</div>
-        
-        <div className="critical-box">
-          ⚡ CRITICAL PERIOD: Apr 7-10 has 10+ simultaneous tasks. Maximum coordination required!
-        </div>
-        
-        <div className="milestone-grid">
-          <div className="milestone-card">
-            <div className="milestone-icon">👔</div>
-            <div className="milestone-date">Mar 24</div>
-            <div className="milestone-name">Umpires & Scorers Confirmed</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">🏆</div>
-            <div className="milestone-date">Mar 28-31</div>
-            <div className="milestone-name">Trophies Order (Advance)</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">⚕️</div>
-            <div className="milestone-date">Apr 4-6</div>
-            <div className="milestone-name">Medical Supplies (Advance)</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">🍽️</div>
-            <div className="milestone-date">Apr 6-8</div>
-            <div className="milestone-name">Food Vendors Selected</div>
-          </div>
-          <div className="milestone-card" style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.05))', border: '2px solid #EF4444' }}>
-            <div className="milestone-icon">⚡</div>
-            <div className="milestone-date">Apr 7-10</div>
-            <div className="milestone-name" style={{ color: '#FCA5A5', fontWeight: 'bold' }}>🔥 PEAK COORDINATION</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">👕</div>
-            <div className="milestone-date">Apr 9</div>
-            <div className="milestone-name">Jerseys Collection</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">👨‍🍳</div>
-            <div className="milestone-date">Apr 10</div>
-            <div className="milestone-name">Food Tasting & Approval</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">✅</div>
-            <div className="milestone-date">Apr 10</div>
-            <div className="milestone-name">Production Phase Complete</div>
-          </div>
-        </div>
-        
-        <div className="outcomes-section" style={{ borderLeft: '4px solid #EF4444' }}>
-          <div className="outcomes-title">Expected Outcomes</div>
-          <div className="outcome-item" style={{ borderColor: '#EF4444' }}>✓ All equipment sourced and vendors confirmed</div>
-          <div className="outcome-item" style={{ borderColor: '#EF4444' }}>✓ All officials (umpires, scorers) appointed</div>
-          <div className="outcome-item" style={{ borderColor: '#EF4444' }}>✓ All supplies (trophies, medical, jerseys) secured</div>
-          <div className="outcome-item" style={{ borderColor: '#EF4444' }}>✓ Food arrangements locked and tested</div>
-          <div className="outcome-item" style={{ borderColor: '#EF4444' }}>✓ All advance payments completed</div>
-        </div>
-      </div>
-
-      {/* Phase 4 */}
-      <div className="phase-section" style={{ borderColor: '#8B5CF6' }}>
-        <div className="phase-title" style={{ color: '#8B5CF6' }}>
-          <span>🎊</span> PHASE 4: FINAL SETUP & LAUNCH
-        </div>
-        <div className="phase-duration">April 11-16, 2026 (6 Days) | COUNTDOWN TO EVENT</div>
-        
-        <div className="milestone-grid">
-          <div className="milestone-card">
-            <div className="milestone-icon">🎾</div>
-            <div className="milestone-date">Apr 11</div>
-            <div className="milestone-name">Balls (36 units) Ordered</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">📱</div>
-            <div className="milestone-date">Apr 13</div>
-            <div className="milestone-name">Remote Players Final Setup</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">✈️</div>
-            <div className="milestone-date">Apr 14</div>
-            <div className="milestone-name">Women Travel Arrangements</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">🙏</div>
-            <div className="milestone-date">Apr 16</div>
-            <div className="milestone-name">Pooja Material Ordered</div>
-          </div>
-          <div className="milestone-card">
-            <div className="milestone-icon">🎉</div>
-            <div className="milestone-date">Apr 15-16</div>
-            <div className="milestone-name">Final Venue Setup & Deco</div>
-          </div>
-          <div className="milestone-card" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.05))', border: '2px solid #8B5CF6' }}>
-            <div className="milestone-icon">🚀</div>
-            <div className="milestone-date">Apr 16</div>
-            <div className="milestone-name" style={{ color: '#E9D5FF', fontWeight: 'bold' }}>✅ EVENT READY!</div>
-          </div>
-        </div>
-        
-        <div className="outcomes-section" style={{ borderLeft: '4px solid #8B5CF6' }}>
-          <div className="outcomes-title">Expected Outcomes</div>
-          <div className="outcome-item" style={{ borderColor: '#8B5CF6' }}>✓ Venue completely set up and decorated</div>
-          <div className="outcome-item" style={{ borderColor: '#8B5CF6' }}>✓ All materials delivered and in place</div>
-          <div className="outcome-item" style={{ borderColor: '#8B5CF6' }}>✓ All arrangements 100% confirmed</div>
-          <div className="outcome-item" style={{ borderColor: '#8B5CF6' }}>✓ Backup plans activated and tested</div>
-          <div className="outcome-item" style={{ borderColor: '#8B5CF6' }}>✓ READY FOR EVENT EXECUTION</div>
-        </div>
-      </div>
-
-      {/* Critical Success Factors */}
-      <div className="success-factors">
-        <div className="factor-box" style={{ borderColor: '#10B981' }}>
-          <div className="factor-title" style={{ color: '#10B981' }}>📌 Dependencies to Monitor</div>
-          <div className="factor-item">✓ Team finalization BEFORE auction rules</div>
-          <div className="factor-item">✓ Auction completion BEFORE player list</div>
-          <div className="factor-item">✓ Vendors selected BEFORE payments</div>
-          <div className="factor-item">✓ Medical approvals BEFORE Apr 10</div>
-          <div className="factor-item">✓ All collections BEFORE Apr 16</div>
-        </div>
-        
-        <div className="factor-box" style={{ borderColor: '#F59E0B' }}>
-          <div className="factor-title" style={{ color: '#F59E0B' }}>📅 Weekly Checkpoints</div>
-          <div className="factor-item">📌 Feb 25: Teams locked in</div>
-          <div className="factor-item">📌 Mar 10: Auction completed ⭐</div>
-          <div className="factor-item">📌 Mar 24: Officials confirmed</div>
-          <div className="factor-item">📌 Apr 7: Payment deadlines met</div>
-          <div className="factor-item">📌 Apr 14: All arrangements final</div>
-        </div>
-
-        <div className="factor-box" style={{ borderColor: '#EF4444' }}>
-          <div className="factor-title" style={{ color: '#EF4444' }}>⚡ Critical Tasks</div>
-          <div className="factor-item">🔴 Apr 7-10: Peak coordination (10+ tasks)</div>
-          <div className="factor-item">🔴 Vendor tasting & approval (Apr 10)</div>
-          <div className="factor-item">🔴 Jersey collection (Apr 9)</div>
-          <div className="factor-item">🔴 Women travel arrangements (Apr 14)</div>
-          <div className="factor-item">🔴 Final venue setup (Apr 15-16)</div>
-        </div>
-
-        <div className="factor-box" style={{ borderColor: '#8B5CF6' }}>
-          <div className="factor-title" style={{ color: '#8B5CF6' }}>🎯 Success Metrics</div>
-          <div className="factor-item">✅ 100% vendor payments by Apr 17</div>
-          <div className="factor-item">✅ All 48 teams & players confirmed</div>
-          <div className="factor-item">✅ All equipment delivered by Apr 15</div>
-          <div className="factor-item">✅ Food arrangements locked by Apr 10</div>
-          <div className="factor-item">✅ Event-ready status on Apr 16</div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="footer">
-        <p><strong>OCPL 2026 Event Management Roadmap</strong></p>
-        <p>Complete Timeline: <span className="footer-date">February 12 - April 16, 2026</span> | 64 Days | 48 Tasks | 4 Phases</p>
-        <p style={{ marginTop: '16px', fontSize: '11px' }}>FCC TEAM</p>
-      </div>
-    </div>
     </div>
   );
 }

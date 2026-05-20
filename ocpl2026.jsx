@@ -575,7 +575,7 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt }) {
         <div className="outcomes-section" style={{ borderLeft: '4px solid #10B981' }}>
           <div className="outcomes-title">Expected Outcomes</div>
           <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ Venue completely confirmed and booked</div>
-          <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ All team owners finalized (48 teams)</div>
+          <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ All team owners finalized (48+ Players)</div>
           <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ All captains appointed</div>
           <div className="outcome-item" style={{ borderColor: '#10B981' }}>✓ Budget allocated and locked</div>
         </div>

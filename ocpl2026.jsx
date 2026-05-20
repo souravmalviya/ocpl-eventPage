@@ -140,7 +140,20 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt }) {
   };
 
   return (
-    <div ref={containerRef} style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', backgroundColor: '#0f172a', color: '#fff', fontFamily: 'Arial, sans-serif', lineHeight: 1.6, boxSizing: 'border-box' }}>
+    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh' }}>
+
+      {/* ── Navbar ── */}
+      <nav className="ocpl-navbar">
+        <div className="ocpl-navbar-inner">
+          <div className="ocpl-navbar-left">
+            <img src="/onclusive-logo.png" alt="Onclusive" className="ocpl-navbar-logo-img" />
+            <span className="ocpl-navbar-brand">Onclusive</span>
+          </div>
+          <div className="ocpl-navbar-right">OCPL 2026 Event Roadmap</div>
+        </div>
+      </nav>
+
+      <div ref={containerRef} style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', backgroundColor: '#0f172a', color: '#fff', fontFamily: 'Arial, sans-serif', lineHeight: 1.6, boxSizing: 'border-box' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;600;500&family=Inter:wght@400;500;600&display=swap');
 
@@ -152,12 +165,60 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt }) {
           font-family: 'Poppins', sans-serif;
           text-align: center;
           font-size: 56px;
-          font-weight: 700;
+          font-weight: 800;
           margin-bottom: 8px;
-          background: linear-gradient(135deg, #10B981, #F59E0B, #EF4444, #8B5CF6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          color: #ffffff;
+        }
+
+        /* ── Navbar ── */
+        .ocpl-navbar {
+          width: 100%;
+          background: #0a0f1e;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+          padding: 0 32px;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          box-shadow: 0 2px 16px rgba(0,0,0,0.4);
+        }
+
+        .ocpl-navbar-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          height: 64px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .ocpl-navbar-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .ocpl-navbar-logo-img {
+          height: 38px;
+          width: 38px;
+          object-fit: contain;
+          border-radius: 6px;
+        }
+
+        .ocpl-navbar-brand {
+          font-family: 'Poppins', sans-serif;
+          font-size: 18px;
+          font-weight: 700;
+          color: #ffffff;
+          letter-spacing: 0.3px;
+        }
+
+        .ocpl-navbar-right {
+          font-family: 'Poppins', sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          color: #94a3b8;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
         
         .subtitle {
@@ -799,6 +860,7 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt }) {
         <p>Complete Timeline: <span className="footer-date">February 12 - April 16, 2026</span> | 64 Days | 48 Tasks | 4 Phases</p>
         <p style={{ marginTop: '16px', fontSize: '11px' }}>FCC TEAM</p>
       </div>
+    </div>
     </div>
   );
 }

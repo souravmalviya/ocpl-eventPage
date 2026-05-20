@@ -149,7 +149,6 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt }) {
             <img src="/onclusive-logo.png" alt="Onclusive" className="ocpl-navbar-logo-img" />
             <span className="ocpl-navbar-brand">Onclusive</span>
           </div>
-          <div className="ocpl-navbar-right">OCPL 2026 Event Roadmap</div>
         </div>
       </nav>
 

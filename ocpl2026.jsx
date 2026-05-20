@@ -461,7 +461,6 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt, theme = 'da
 
       {/* ── Hero ── */}
       <div className="hero">
-        <div className="hero-label">Event Planning Dashboard</div>
         <h1 className="hero-title">OCPL 2026</h1>
         <div className="hero-subtitle">EVENT ROADMAP</div>
         <div className="hero-meta">

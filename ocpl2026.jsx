@@ -11,7 +11,7 @@ export default function OCPL2026DetailedRoadmap() {
     }
 
     const editableElements = containerRef.current.querySelectorAll(
-      '.milestone-date, .phase-duration'
+      '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
     );
 
     let savedDates = {};
@@ -40,7 +40,10 @@ export default function OCPL2026DetailedRoadmap() {
     const persistDates = () => {
       const currentDates = {};
 
-      editableElements.forEach((element) => {
+      const allEditableElements = containerRef.current.querySelectorAll(
+        '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
+      );
+      allEditableElements.forEach((element) => {
         const id = element.getAttribute('data-date-id');
         if (id) {
           currentDates[id] = (element.textContent || '').trim();
@@ -67,7 +70,7 @@ export default function OCPL2026DetailedRoadmap() {
     }
 
     const editableElements = containerRef.current.querySelectorAll(
-      '.milestone-date, .phase-duration'
+      '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
     );
 
     editableElements.forEach((element) => {
@@ -86,7 +89,7 @@ export default function OCPL2026DetailedRoadmap() {
     }
 
     const editableElements = containerRef.current.querySelectorAll(
-      '.milestone-date, .phase-duration'
+      '.milestone-date, .phase-duration, .stat-box-date, .footer-date'
     );
 
     return Array.from(editableElements).map((element) => {
@@ -229,15 +232,35 @@ export default function OCPL2026DetailedRoadmap() {
         }
 
         .milestone-date[contenteditable='true']:hover,
-        .phase-duration[contenteditable='true']:hover {
+        .phase-duration[contenteditable='true']:hover,
+        .stat-box-date[contenteditable='true']:hover,
+        .footer-date[contenteditable='true']:hover {
           background: rgba(148, 163, 184, 0.15);
         }
 
         .milestone-date[contenteditable='true']:focus,
-        .phase-duration[contenteditable='true']:focus {
+        .phase-duration[contenteditable='true']:focus,
+        .stat-box-date[contenteditable='true']:focus,
+        .footer-date[contenteditable='true']:focus {
           outline: 2px solid #22d3ee;
           outline-offset: 2px;
           background: rgba(34, 211, 238, 0.12);
+        }
+
+        .stat-box-date {
+          font-size: 11px;
+          color: #64748b;
+          margin-top: 8px;
+          border-radius: 4px;
+          transition: background-color 0.2s ease;
+          cursor: text;
+        }
+
+        .footer-date {
+          display: inline;
+          border-radius: 4px;
+          transition: background-color 0.2s ease;
+          cursor: text;
         }
         
         .milestone-name {
@@ -477,7 +500,7 @@ export default function OCPL2026DetailedRoadmap() {
           <div className="stat-icon">📅</div>
           <div className="stat-number">64</div>
           <div className="stat-label">Days</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Feb 12 - Apr 16</div>
+          <div className="stat-box-date">Feb 12 - Apr 16</div>
         </div>
         <div className="stat-box">
           <div className="stat-icon">✅</div>
@@ -753,7 +776,7 @@ export default function OCPL2026DetailedRoadmap() {
       {/* Footer */}
       <div className="footer">
         <p><strong>OCPL 2026 Event Management Roadmap</strong></p>
-        <p>Complete Timeline: February 12 - April 16, 2026 | 64 Days | 48 Tasks | 4 Phases</p>
+        <p>Complete Timeline: <span className="footer-date">February 12 - April 16, 2026</span> | 64 Days | 48 Tasks | 4 Phases</p>
         <p style={{ marginTop: '16px', fontSize: '11px' }}>FCC TEAM</p>
       </div>
     </div>

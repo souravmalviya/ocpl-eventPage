@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function OCPL2026DetailedRoadmap() {
+export default function OCPL2026DetailedRoadmap({ onNavigateToGantt }) {
   const containerRef = useRef(null);
   const defaultDatesRef = useRef({});
   const DATE_STORAGE_KEY = 'ocpl2026-editable-dates';
@@ -422,6 +422,23 @@ export default function OCPL2026DetailedRoadmap() {
           border-color: rgba(134, 239, 172, 0.95);
         }
 
+        .gantt-btn {
+          background: rgba(37, 99, 235, 0.22);
+          color: #bfdbfe;
+          border: 1px solid rgba(147, 197, 253, 0.55);
+          border-radius: 999px;
+          padding: 8px 16px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .gantt-btn:hover {
+          background: rgba(37, 99, 235, 0.36);
+          border-color: rgba(147, 197, 253, 0.95);
+        }
+
         @media (max-width: 1024px) {
           .main-title {
             font-size: 44px;
@@ -491,6 +508,9 @@ export default function OCPL2026DetailedRoadmap() {
         </button>
         <button type="button" className="export-btn" onClick={exportDatesAsCSV}>
           Export Dates CSV
+        </button>
+        <button type="button" className="gantt-btn" onClick={onNavigateToGantt}>
+          View Gantt Chart
         </button>
       </div>
 

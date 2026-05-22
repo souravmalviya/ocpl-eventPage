@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import OCPL2026DetailedRoadmap from '../ocpl2026.jsx';
 import OCPL2026GanttChart from '../gantchart.jsx';
 
@@ -15,7 +15,10 @@ function App() {
     catch { return {}; }
   });
 
-  const updateGanttDates = (taskIds, parsedDate) => {
+  // useCallback with [] keeps the reference stable across re-renders,
+  // so the useEffect in ocpl2026.jsx never re-fires mid-keystroke and
+  // the cursor position is never reset while the user is typing.
+  const updateGanttDates = useCallback((taskIds, parsedDate) => {
     if (!parsedDate || !taskIds?.length) return;
     setGanttDates(prev => {
       const next = { ...prev };
@@ -23,7 +26,7 @@ function App() {
       localStorage.setItem(GANTT_DATES_KEY, JSON.stringify(next));
       return next;
     });
-  };
+  }, []); // setGanttDates is guaranteed stable by React
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 

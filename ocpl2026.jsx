@@ -270,12 +270,6 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt, theme = 'da
         .hero-inner { max-width:1180px; margin:0 auto; position:relative; display:flex; gap:48px; align-items:flex-start; }
         .hero-left { flex:1; }
         .hero-right { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:20px; padding-top:12px; }
-        .hero-eyebrow {
-          display:inline-flex; align-items:center; gap:10px;
-          font-size:10px; font-weight:700; letter-spacing:3px;
-          text-transform:uppercase; color:var(--hero-lbl); margin-bottom:18px;
-        }
-        .hero-eyebrow::before { content:''; width:28px; height:1px; background:var(--hero-lbl); }
         .hero-headline {
           font-family:'Poppins',sans-serif; font-weight:900;
           line-height:0.88; letter-spacing:-4px; margin-bottom:0;
@@ -290,9 +284,8 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt, theme = 'da
         }
         .hero-rule {
           display:flex; align-items:center; gap:16px;
-          margin:20px 0 28px;
+          margin:16px 0 28px;
         }
-        .hero-rule-line { width:60px; height:2px; background:var(--bd); flex-shrink:0; }
         .hero-rule-text {
           font-size:11px; font-weight:700; letter-spacing:5px;
           text-transform:uppercase; color:var(--tx3); white-space:nowrap;
@@ -564,13 +557,11 @@ export default function OCPL2026DetailedRoadmap({ onNavigateToGantt, theme = 'da
       <div className="hero">
         <div className="hero-inner">
           <div className="hero-left">
-            <div className="hero-eyebrow">Onclusive Cricket Premier League</div>
             <div className="hero-headline">
               <span className="hero-headline-main">OCPL</span>
               <span className="hero-headline-year">2026</span>
             </div>
             <div className="hero-rule">
-              <div className="hero-rule-line" />
               <span className="hero-rule-text">Event Roadmap</span>
               <div className="hero-rule-flex" />
             </div>
